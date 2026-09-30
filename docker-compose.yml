@@ -10,6 +10,7 @@ x-bootstrap: &bootstrap
   env_file: .env
   volumes:
     - ${CONFIG_ROOT}:/config
+    - ${DOWNLOADS_ROOT}:/downloads
     - ./setup:/setup:ro
   restart: "no"
 
@@ -27,7 +28,7 @@ services:
       - ${CONFIG_ROOT}:/config
       - ./setup:/setup:ro
       - /var/run/docker.sock:/var/run/docker.sock  # removes arr-seed and itself when done
-    depends_on: [qbittorrent, sonarr, radarr, lidarr, prowlarr, flaresolverr, bazarr, emby, seerr]
+    depends_on: [qbittorrent, sonarr, radarr, lidarr, prowlarr, flaresolverr, bazarr, emby, seerr, homarr]
 
   homarr:
     image: ghcr.io/ajnart/homarr:latest
@@ -36,8 +37,9 @@ services:
       - TZ=${TZ}
       - HOSTNAME=0.0.0.0  # Next.js binds to $HOSTNAME; the container id makes the localhost healthcheck fail
     volumes:
-      - ${CONFIG_ROOT}/homarr/config:/app/data/config
+      - ${CONFIG_ROOT}/homarr/configs:/app/data/configs  # Homarr 0.x saves boards here
       - ${CONFIG_ROOT}/homarr/icons:/app/public/icons
+      - ${CONFIG_ROOT}/homarr/data:/data  # users (DATABASE_URL=file:/data/db.sqlite)
       - /var/run/docker.sock:/var/run/docker.sock:ro
     ports:
       - ${HOMARR_PORT}:7575
@@ -182,5 +184,8 @@ services:
       - WATCHTOWER_NOTIFICATIONS=${WATCHTOWER_NOTIFICATIONS}
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
-    command: --cleanup --include-restarting --schedule "0 30 4 * * *"
+    # only this stack's containers; without names it would update every container on the host
+    command: >-
+      --cleanup --include-restarting --schedule "0 30 4 * * *"
+      homarr sonarr radarr lidarr prowlarr flaresolverr bazarr qbittorrent emby seerr watchtower
     restart: unless-stopped

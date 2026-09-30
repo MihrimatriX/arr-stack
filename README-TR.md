@@ -93,9 +93,10 @@ Kısaca şöyle düşünün: Film/dizi istiyorsunuz, sistem otomatik buluyor, in
    ```
    `arr-seed` + `arr-setup` konteynerleri ilk kurulumu kendisi yapar: qBittorrent şifresi ve kategorileri,
    *arr root folder + qBittorrent bağlantısı, Prowlarr ↔ *arr senkronu, Bazarr ↔ Sonarr/Radarr,
-   Emby kullanıcısı ve kütüphaneleri. Tüm arayüzlerde giriş: `.env` içindeki `STACK_USER` / `STACK_PASSWORD`.
-   Durumu görmek için: `docker logs arr-setup`. Elle kalanlar: indeksleyici seçimi (`PROWLARR_INDEXERS`),
-   Bazarr dil profili, Homarr paneli.
+   Emby kullanıcısı ve kütüphaneleri, Homarr hesabı ve paneli. Tüm arayüzlerde giriş: `.env` içindeki
+   `STACK_USER` / `STACK_PASSWORD` (Homarr için şifrede en az bir sembol olmalı). İndeksleyiciler
+   `PROWLARR_INDEXERS`, altyazı dilleri `SUBTITLE_LANGUAGES` ile seçilir. Hata olursa: `docker logs arr-setup`.
+   Şifreyi sonradan değiştirirsen *arr'lar ve Bazarr kendiliğinden güncellenir; qBittorrent, Emby ve Homarr güncellenmez.
 
 4. **Kullanmaya başlayın**
    - Ana Panel:        http://localhost:7575 (Homarr)

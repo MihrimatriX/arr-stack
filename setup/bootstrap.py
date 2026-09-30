@@ -3,7 +3,7 @@
 `bootstrap.py seed` runs before the apps start and pre-writes their config files (API keys,
 qBittorrent login, Bazarr links). `bootstrap.py` (no arg) runs after and wires everything via APIs.
 """
-import base64, contextlib, hashlib, http.cookiejar, json, os, re, socket, sys, time
+import base64, contextlib, hashlib, http.cookiejar, json, os, re, socket, sys, time, uuid
 import urllib.error, urllib.parse, urllib.request
 from http.client import HTTPConnection
 
@@ -65,6 +65,8 @@ def apikey(app):
 
 def seed():
     keys = {app: apikey(app) for app in [*ARRS, "prowlarr"]}
+    for *_, cat in ARRS.values():  # qBittorrent only creates these on the first download; the *arrs warn until then
+        os.makedirs(f"/downloads/{cat}", exist_ok=True)
     qconf = "/config/qbittorrent/qBittorrent/qBittorrent.conf"
     if not os.path.exists(qconf):
         salt = os.urandom(16)
@@ -94,11 +96,10 @@ def servarr(app, port, ver):
     base, h = f"http://{app}:{port}/api/{ver}", {"X-Api-Key": apikey(app)}
     api = lambda m, p, b=None: call(m, base + p, b, h)
     wait(base + "/system/status", h)
-    host = api("GET", "/config/host")
-    if host.get("authenticationMethod") != "forms" or host.get("username") != USER:
-        host.update(authenticationMethod="forms", authenticationRequired="enabled",
-                    username=USER, password=PASS, passwordConfirmation=PASS)
-        api("PUT", f"/config/host/{host['id']}", host)
+    host = api("GET", "/config/host")  # always rewritten so a changed STACK_PASSWORD propagates
+    host.update(authenticationMethod="forms", authenticationRequired="enabled",
+                username=USER, password=PASS, passwordConfirmation=PASS)
+    api("PUT", f"/config/host/{host['id']}", host)
     return api
 
 
@@ -217,6 +218,8 @@ def bazarr():
     if not wait(base + "/system/settings", h)["general"]["enabled_providers"]:
         post([("settings-general-enabled_providers", p) for p in SUB_PROVIDERS]
              + [("settings-subf2m-user_agent", "Mozilla/5.0")])
+    # Bazarr md5-hashes the plain value on save; resent every run so a changed STACK_PASSWORD propagates
+    post([("settings-auth-type", "form"), ("settings-auth-username", USER), ("settings-auth-password", PASS)])
     if not call("GET", base + "/system/languages/profiles", headers=h):
         items = [{"id": i, "language": lang, "hi": "False", "forced": "False", "audio_exclude": "False",
                   "audio_only_include": "False"} for i, lang in enumerate(SUB_LANGS, 1)]
@@ -251,6 +254,64 @@ def seerr():
     call("POST", base + "/settings/initialize")
 
 
+def homarr():
+    base = "http://homarr:7575"
+    wait(base + "/")
+    # Homarr demands a symbol in the password; the other apps don't care
+    pw = PASS if re.search(r"[$&+,:;=?@#|'<>.^*()%!-]", PASS) else PASS + "!"
+    try:
+        call("POST", base + "/api/trpc/user.createOwnerAccount",
+             {"json": {"username": USER, "password": pw, "passwordConfirmation": pw}})
+        if pw != PASS:
+            print("   Homarr needs a symbol: its password is STACK_PASSWORD followed by '!'")
+    except RuntimeError as e:
+        if "-> 403" not in str(e):  # 403 = owner already exists
+            raise
+    path = "/config/homarr/configs/default.json"
+    board = json.load(open(path))
+    secret = lambda field, value: {"field": field, "type": "private", "value": value}
+    with contextlib.suppress(OSError, KeyError):
+        seerr_key = json.load(open("/config/seerr/settings.json"))["main"]["apiKey"]
+    tiles = [  # name, internal url, host port var, icon, integration type, integration fields
+        ("Sonarr", "http://sonarr:8989", "SONARR_PORT", "sonarr", "sonarr", [secret("apiKey", apikey("sonarr"))]),
+        ("Radarr", "http://radarr:7878", "RADARR_PORT", "radarr", "radarr", [secret("apiKey", apikey("radarr"))]),
+        ("Lidarr", "http://lidarr:8686", "LIDARR_PORT", "lidarr", "lidarr", [secret("apiKey", apikey("lidarr"))]),
+        ("Prowlarr", "http://prowlarr:9696", "PROWLARR_PORT", "prowlarr", None, []),
+        # Homarr 0.x's qBittorrent client looks for an "SID" cookie; qBittorrent 5.x names it QBT_SID_<port>
+        ("qBittorrent", QBIT, "QBITTORRENT_WEBUI_PORT", "qbittorrent", None, []),
+        ("Bazarr", "http://bazarr:6767", "BAZARR_PORT", "bazarr", None, []),
+        ("Emby", "http://emby:8096", "EMBY_HTTP_PORT", "emby", None, []),  # Homarr 0.x has no Emby integration
+        ("Seerr", "http://seerr:5055", "SEERR_PORT", "jellyseerr", "jellyseerr",
+         [secret("apiKey", seerr_key)] if "seerr_key" in locals() else []),
+    ]
+    if any(a["integration"]["type"] == "sonarr" for a in board["apps"]):
+        # already filled: keep layout and hand edits, only refresh credentials (STACK_PASSWORD may have changed)
+        fields = {kind: f for _, _, _, _, kind, f in tiles if kind}
+        for a in board["apps"]:
+            if a["integration"]["type"] in fields:
+                a["integration"]["properties"] = fields[a["integration"]["type"]]
+        return write(path, json.dumps(board, indent=2))
+    at = lambda x, y, w, h: {"location": {"x": x, "y": y}, "size": {"width": w, "height": h}}
+    area = {"type": "wrapper", "properties": {"id": "default"}}
+    board["apps"] = [{
+        "id": str(uuid.uuid4()), "name": name, "url": url,
+        # ponytail: tiles open on localhost; set a LAN host here if the board is used from other devices
+        "behaviour": {"externalUrl": f"http://localhost:{E[port]}", "isOpeningNewTab": True},
+        "network": {"enabledStatusChecker": True, "statusCodes": ["200", "301", "302", "307", "308", "401"]},
+        "appearance": {"iconUrl": f"https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/{icon}.png",
+                       "appNameStatus": "normal", "positionAppName": "column", "lineClampAppName": 1},
+        "integration": {"type": kind, "properties": fields}, "area": area,
+        "shape": {"sm": at(i % 3, i // 3, 1, 1), "md": at(i % 6, i // 6, 1, 1), "lg": at(i % 6 * 2, i // 6 * 2, 2, 2)},
+    } for i, (name, url, port, icon, kind, fields) in enumerate(tiles)]
+    board["widgets"] = [
+        {"id": str(uuid.uuid4()), "type": "calendar", "area": area,  # Homarr doesn't fill in defaults
+         "properties": {"hideWeekDays": True, "showUnmonitored": False, "radarrReleaseType": "inCinemas",
+                        "fontSize": "xs"},
+         "shape": {"sm": at(0, 3, 3, 4), "md": at(0, 2, 6, 4), "lg": at(0, 4, 12, 4)}},
+    ]
+    write(path, json.dumps(board, indent=2))
+
+
 def remove_containers(*names):
     """Delete finished one-shot containers so they don't linger in Docker Desktop."""
     class Docker(HTTPConnection):
@@ -268,7 +329,7 @@ def main():
     if sys.argv[1:] == ["seed"]:
         return seed()
     steps = [("qbittorrent", qbittorrent), *((a, lambda a=a: arr(a)) for a in ARRS),
-             ("prowlarr", prowlarr), ("bazarr", bazarr), ("emby", emby), ("seerr", seerr)]
+             ("prowlarr", prowlarr), ("bazarr", bazarr), ("emby", emby), ("seerr", seerr), ("homarr", homarr)]
     failed = []
     for name, fn in steps:  # one broken app must not block the rest
         print(f"-> {name}", flush=True)
