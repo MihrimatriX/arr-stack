@@ -1,0 +1,8 @@
+# secrets and runtime state: never commit
+.env
+config/*
+!config/.gitkeep
+downloads/*
+!downloads/.gitkeep
+media/*/*
+!media/*/.gitkeep

@@ -26,8 +26,8 @@ Kısaca şöyle düşünün: Film/dizi istiyorsunuz, sistem otomatik buluyor, in
 ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
 │   Yayınlama     │    │   Yönetim       │    │   İzleme        │
 │                 │    │                 │    │                 │
-│ • Jellyfin      │    │ • Homarr        │    │ • Tautulli      │
-│ • Plex          │    │ • Portainer     │    │ • Jellystat     │
+│                 │    │ • Homarr        │    │                 │
+│ • Emby          │    │ • Portainer     │    │                 │
 │ • Navidrome     │    │ • Watchtower    │    │ • Audiobookshelf│
 └─────────────────┘    └─────────────────┘    └─────────────────┘
 ```
@@ -38,13 +38,11 @@ Kısaca şöyle düşünün: Film/dizi istiyorsunuz, sistem otomatik buluyor, in
 - **[Sonarr](https://sonarr.tv/)** - Dizileri takip eder, yeni bölümleri bulur
 - **[Radarr](https://radarr.video/)** - Filmleri takip eder, kaliteli sürümleri indirir  
 - **[Lidarr](https://lidarr.audio/)** - Müzik albümlerini takip eder
-- **[Readarr](https://readarr.com/)** - Kitapları ve sesli kitapları yönetir
 - **[Prowlarr](https://prowlarr.com/)** - Tüm arama kaynaklarını tek yerden yönetir
 - **[Bazarr](https://www.bazarr.media/)** - Altyazıları otomatik bulur ve indirir
 
 ### 🎬 Medya Sunucuları
-- **[Jellyfin](https://jellyfin.org/)** - Tamamen ücretsiz, Netflix benzeri arayüz
-- **[Plex](https://www.plex.tv/)** - En popüler medya sunucusu, her cihazda çalışır
+- **[Emby](https://emby.media/)** - Şık uygulamaları olan medya sunucusu (bazı özellikler Emby Premiere ister)
 - **[Navidrome](https://www.navidrome.org/)** - Spotify benzeri müzik sunucusu
 - **[Audiobookshelf](https://www.audiobookshelf.org/)** - Sesli kitap sunucusu
 
@@ -57,8 +55,6 @@ Kısaca şöyle düşünün: Film/dizi istiyorsunuz, sistem otomatik buluyor, in
 - **[Watchtower](https://containrrr.dev/watchtower/)** - Uygulamaları otomatik günceller
 
 ### 📊 İstatistik Araçları
-- **[Tautulli](https://tautulli.com/)** - Plex izleme istatistikleri
-- **[Jellystat](https://github.com/Fallenbagel/jellystat)** - Jellyfin izleme istatistikleri
 
 ## 🎯 Neden Bu Yığını Kullanmalısınız?
 
@@ -95,14 +91,18 @@ Kısaca şöyle düşünün: Film/dizi istiyorsunuz, sistem otomatik buluyor, in
    ```bash
    docker compose up -d
    ```
+   `arr-seed` + `arr-setup` konteynerleri ilk kurulumu kendisi yapar: qBittorrent şifresi ve kategorileri,
+   *arr root folder + qBittorrent bağlantısı, Prowlarr ↔ *arr senkronu, Bazarr ↔ Sonarr/Radarr,
+   Emby kullanıcısı ve kütüphaneleri. Tüm arayüzlerde giriş: `.env` içindeki `STACK_USER` / `STACK_PASSWORD`.
+   Durumu görmek için: `docker logs arr-setup`. Elle kalanlar: indeksleyici seçimi (`PROWLARR_INDEXERS`),
+   Bazarr dil profili, Homarr paneli.
 
 4. **Kullanmaya başlayın**
    - Ana Panel:        http://localhost:7575 (Homarr)
    - Dizi Yöneticisi:  http://localhost:8989 (Sonarr)
    - Film Yöneticisi:  http://localhost:7878 (Radarr)
    - Müzik Yöneticisi: http://localhost:8686 (Lidarr)
-   - Kitap Yöneticisi: http://localhost:8787 (Readarr)
-   - Medya Sunucusu:   http://localhost:8096 (Jellyfin)
+   - Medya Sunucusu:   http://localhost:8096 (Emby)
 
 ## 📁 Dizin Yapısı
 
@@ -113,11 +113,9 @@ arr-stack/
 │   ├── sonarr/            # Dizi yöneticisi
 │   ├── radarr/            # Film yöneticisi
 │   ├── lidarr/            # Müzik yöneticisi
-│   ├── readarr/           # Kitap yöneticisi
 │   ├── prowlarr/          # İndeksleyici yöneticisi
 │   ├── bazarr/            # Altyazı yöneticisi
-│   ├── jellyfin/          # Medya sunucusu
-│   ├── plex/              # Alternatif medya sunucusu
+│   ├── emby/              # Alternatif medya sunucusu
 │   ├── qbittorrent/       # Torrent istemcisi
 │   ├── portainer/         # Konteyner yönetimi
 │   └── ...
@@ -126,7 +124,6 @@ arr-stack/
 │   ├── movies/            # Film koleksiyonu
 │   ├── tv/                # Dizi koleksiyonu
 │   ├── music/             # Müzik koleksiyonu
-│   ├── books/             # Kitap koleksiyonu
 │   └── audiobooks/        # Sesli kitap koleksiyonu
 ├── docker-compose.yml     # Servis tanımları
 ├── .env                   # Ortam değişkenleri
@@ -149,23 +146,19 @@ HOMARR_PORT=7575
 SONARR_PORT=8989
 RADARR_PORT=7878
 LIDARR_PORT=8686
-READARR_PORT=8787
 PROWLARR_PORT=9696
 BAZARR_PORT=6767
 QBITTORRENT_WEBUI_PORT=8080
-JELLYFIN_HTTP_PORT=8096
-PLEX_HTTP_PORT=32400
+EMBY_HTTP_PORT=8096
 
 # Dizin Yolları
 CONFIG_ROOT=./config
 MEDIA_MOVIES_DIR=./media/movies
 MEDIA_TV_DIR=./media/tv
 MEDIA_MUSIC_DIR=./media/music
-MEDIA_BOOKS_DIR=./media/books
 DOWNLOADS_ROOT=./downloads
 
 # İsteğe Bağlı
-PLEX_CLAIM=                    # plex.tv/claim adresinden alın
 WATCHTOWER_NOTIFICATIONS=      # Discord/Slack webhook URL'si
 ```
 
@@ -173,7 +166,7 @@ WATCHTOWER_NOTIFICATIONS=      # Discord/Slack webhook URL'si
 
 1. **qBittorrent'i Ayarlayın**
    - Varsayılan şifreyi değiştirin (admin/adminadmin)
-   - İndirme kategorilerini ekleyin (sonarr, radarr, lidarr, readarr)
+   - İndirme kategorilerini ekleyin (sonarr, radarr, lidarr)
    - İndirme klasörünü ayarlayın
 
 2. **Prowlarr'da Arama Kaynaklarını Ekleyin**

@@ -5,7 +5,7 @@ A comprehensive Docker-based media automation stack that provides a complete sol
 ## 🌟 What This Stack Does
 
 This stack automates the entire media lifecycle:
-- **Discovery**: Find and track movies, TV shows, music, and books
+- **Discovery**: Find and track movies, TV shows, and music
 - **Download**: Automatically download content based on your preferences
 - **Organization**: Sort and rename files according to your standards
 - **Streaming**: Serve media to all your devices
@@ -25,8 +25,8 @@ This stack automates the entire media lifecycle:
 ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
 │   Streaming     │    │   Management    │    │   Monitoring    │
 │                 │    │                 │    │                 │
-│ • Jellyfin      │    │ • Homarr        │    │ • Tautulli      │
-│ • Plex          │    │ • Portainer     │    │ • Jellystat     │
+│                 │    │ • Homarr        │    │                 │
+│ • Emby          │    │ • Portainer     │    │                 │
 │ • Navidrome     │    │ • Watchtower    │    │ • Audiobookshelf│
 └─────────────────┘    └─────────────────┘    └─────────────────┘
 ```
@@ -37,13 +37,11 @@ This stack automates the entire media lifecycle:
 - **[Sonarr](https://sonarr.tv/)** - TV show collection manager
 - **[Radarr](https://radarr.video/)** - Movie collection manager  
 - **[Lidarr](https://lidarr.audio/)** - Music collection manager
-- **[Readarr](https://readarr.com/)** - Book and audiobook manager
 - **[Prowlarr](https://prowlarr.com/)** - Indexer manager for all *arr apps
 - **[Bazarr](https://www.bazarr.media/)** - Subtitle manager
 
 ### 🎬 Media Servers
-- **[Jellyfin](https://jellyfin.org/)** - Free, open-source media server
-- **[Plex](https://www.plex.tv/)** - Popular media server with extensive device support
+- **[Emby](https://emby.media/)** - Media server with polished apps (some features need Emby Premiere)
 - **[Navidrome](https://www.navidrome.org/)** - Lightweight music server
 - **[Audiobookshelf](https://www.audiobookshelf.org/)** - Audiobook server
 
@@ -56,8 +54,6 @@ This stack automates the entire media lifecycle:
 - **[Watchtower](https://containrrr.dev/watchtower/)** - Automatic container updates
 
 ### 📊 Monitoring & Analytics
-- **[Tautulli](https://tautulli.com/)** - Plex monitoring and analytics
-- **[Jellystat](https://github.com/Fallenbagel/jellystat)** - Jellyfin analytics
 
 ## 🎯 Key Features
 
@@ -100,8 +96,7 @@ This stack automates the entire media lifecycle:
    - TV Shows: http://localhost:8989 (Sonarr)
    - Movies: http://localhost:7878 (Radarr)
    - Music: http://localhost:8686 (Lidarr)
-   - Books: http://localhost:8787 (Readarr)
-   - Media Server: http://localhost:8096 (Jellyfin)
+   - Media Server: http://localhost:8096 (Emby)
 
 ## 📁 Directory Structure
 
@@ -112,11 +107,9 @@ arr-stack/
 │   ├── sonarr/            # TV show manager
 │   ├── radarr/            # Movie manager
 │   ├── lidarr/            # Music manager
-│   ├── readarr/           # Book manager
 │   ├── prowlarr/          # Indexer manager
 │   ├── bazarr/            # Subtitle manager
-│   ├── jellyfin/          # Media server
-│   ├── plex/              # Alternative media server
+│   ├── emby/              # Alternative media server
 │   ├── qbittorrent/       # Torrent client
 │   ├── portainer/         # Container management
 │   └── ...
@@ -125,7 +118,6 @@ arr-stack/
 │   ├── movies/           # Movie collection
 │   ├── tv/               # TV show collection
 │   ├── music/            # Music collection
-│   ├── books/            # Book collection
 │   └── audiobooks/       # Audiobook collection
 ├── docker-compose.yml     # Service definitions
 ├── .env                   # Environment variables
@@ -148,23 +140,19 @@ HOMARR_PORT=7575
 SONARR_PORT=8989
 RADARR_PORT=7878
 LIDARR_PORT=8686
-READARR_PORT=8787
 PROWLARR_PORT=9696
 BAZARR_PORT=6767
 QBITTORRENT_WEBUI_PORT=8080
-JELLYFIN_HTTP_PORT=8096
-PLEX_HTTP_PORT=32400
+EMBY_HTTP_PORT=8096
 
 # Directory Paths
 CONFIG_ROOT=./config
 MEDIA_MOVIES_DIR=./media/movies
 MEDIA_TV_DIR=./media/tv
 MEDIA_MUSIC_DIR=./media/music
-MEDIA_BOOKS_DIR=./media/books
 DOWNLOADS_ROOT=./downloads
 
 # Optional
-PLEX_CLAIM=                    # Get from plex.tv/claim
 WATCHTOWER_NOTIFICATIONS=      # Discord/Slack webhook URL
 ```
 

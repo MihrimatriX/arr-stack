@@ -1,11 +1,40 @@
-version: "3.9"
+
+# apps whose config files arr-seed pre-writes; they must wait for it
+x-seeded: &seeded
+  depends_on:
+    arr-seed:
+      condition: service_completed_successfully
+
+x-bootstrap: &bootstrap
+  image: python:3-alpine
+  env_file: .env
+  volumes:
+    - ${CONFIG_ROOT}:/config
+    - ./setup:/setup:ro
+  restart: "no"
 
 services:
+  arr-seed:
+    <<: *bootstrap
+    container_name: arr-seed
+    command: python /setup/bootstrap.py seed
+
+  arr-setup:
+    <<: *bootstrap
+    container_name: arr-setup
+    command: python /setup/bootstrap.py
+    volumes:
+      - ${CONFIG_ROOT}:/config
+      - ./setup:/setup:ro
+      - /var/run/docker.sock:/var/run/docker.sock  # removes arr-seed and itself when done
+    depends_on: [qbittorrent, sonarr, radarr, lidarr, prowlarr, flaresolverr, bazarr, emby, seerr]
+
   homarr:
     image: ghcr.io/ajnart/homarr:latest
     container_name: homarr
     environment:
       - TZ=${TZ}
+      - HOSTNAME=0.0.0.0  # Next.js binds to $HOSTNAME; the container id makes the localhost healthcheck fail
     volumes:
       - ${CONFIG_ROOT}/homarr/config:/app/data/config
       - ${CONFIG_ROOT}/homarr/icons:/app/public/icons
@@ -15,6 +44,7 @@ services:
     restart: unless-stopped
 
   sonarr:
+    <<: *seeded
     image: lscr.io/linuxserver/sonarr:latest
     container_name: sonarr
     environment:
@@ -30,6 +60,7 @@ services:
     restart: unless-stopped
 
   radarr:
+    <<: *seeded
     image: lscr.io/linuxserver/radarr:latest
     container_name: radarr
     environment:
@@ -45,6 +76,7 @@ services:
     restart: unless-stopped
 
   lidarr:
+    <<: *seeded
     image: lscr.io/linuxserver/lidarr:latest
     container_name: lidarr
     environment:
@@ -59,22 +91,8 @@ services:
       - ${LIDARR_PORT}:8686
     restart: unless-stopped
 
-  readarr:
-    image: ghcr.io/hotio/readarr:nightly
-    container_name: readarr
-    environment:
-      - PUID=${PUID}
-      - PGID=${PGID}
-      - TZ=${TZ}
-    volumes:
-      - ${CONFIG_ROOT}/readarr:/config
-      - ${MEDIA_BOOKS_DIR}:/books
-      - ${DOWNLOADS_ROOT}:/downloads
-    ports:
-      - ${READARR_PORT}:8787
-    restart: unless-stopped
-
   prowlarr:
+    <<: *seeded
     image: lscr.io/linuxserver/prowlarr:latest
     container_name: prowlarr
     environment:
@@ -87,7 +105,15 @@ services:
       - ${PROWLARR_PORT}:9696
     restart: unless-stopped
 
+  flaresolverr:
+    image: ghcr.io/flaresolverr/flaresolverr:latest
+    container_name: flaresolverr
+    environment:
+      - TZ=${TZ}
+    restart: unless-stopped
+
   bazarr:
+    <<: *seeded
     image: lscr.io/linuxserver/bazarr:latest
     container_name: bazarr
     environment:
@@ -103,6 +129,7 @@ services:
     restart: unless-stopped
 
   qbittorrent:
+    <<: *seeded
     image: lscr.io/linuxserver/qbittorrent:latest
     container_name: qbittorrent
     environment:
@@ -114,51 +141,41 @@ services:
       - ${CONFIG_ROOT}/qbittorrent:/config
       - ${DOWNLOADS_ROOT}:/downloads
     ports:
-      - ${QBITTORRENT_WEBUI_PORT}:8080
+      - ${QBITTORRENT_WEBUI_PORT}:${QBITTORRENT_WEBUI_PORT}
       - ${QBITTORRENT_BT_PORT}:6881
       - ${QBITTORRENT_BT_PORT}:6881/udp
     restart: unless-stopped
 
-  jellyfin:
-    image: lscr.io/linuxserver/jellyfin:latest
-    container_name: jellyfin
+  emby:
+    image: lscr.io/linuxserver/emby:latest
+    container_name: emby
     environment:
       - PUID=${PUID}
       - PGID=${PGID}
       - TZ=${TZ}
     volumes:
-      - ${CONFIG_ROOT}/jellyfin:/config
-      - ${MEDIA_MOVIES_DIR}:/data/movies
-      - ${MEDIA_TV_DIR}:/data/tvshows
+      - ${CONFIG_ROOT}/emby:/config
+      - ${MEDIA_MOVIES_DIR}:/movies
+      - ${MEDIA_TV_DIR}:/tv
+      - ${MEDIA_MUSIC_DIR}:/music
     ports:
-      - ${JELLYFIN_HTTP_PORT}:8096
+      - ${EMBY_HTTP_PORT}:8096
     restart: unless-stopped
 
-  plex:
-    image: lscr.io/linuxserver/plex:latest
-    container_name: plex
+  seerr:
+    image: ghcr.io/seerr-team/seerr:latest
+    container_name: seerr
+    init: true
     environment:
-      - PUID=${PUID}
-      - PGID=${PGID}
       - TZ=${TZ}
-      - VERSION=docker
-      - PLEX_CLAIM=${PLEX_CLAIM}
     volumes:
-      - ${CONFIG_ROOT}/plex:/config
-      - ${MEDIA_MOVIES_DIR}:/data/movies
-      - ${MEDIA_TV_DIR}:/data/tvshows
+      - ${CONFIG_ROOT}/seerr:/app/config
     ports:
-      - ${PLEX_HTTP_PORT}:32400
-      - 32469:32469
-      - 1900:1900/udp
-      - 32410:32410/udp
-      - 32412:32412/udp
-      - 32413:32413/udp
-      - 32414:32414/udp
+      - ${SEERR_PORT}:5055
     restart: unless-stopped
 
   watchtower:
-    image: containrrr/watchtower:latest
+    image: nickfedor/watchtower:latest
     container_name: watchtower
     environment:
       - TZ=${TZ}

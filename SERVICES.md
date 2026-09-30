@@ -50,16 +50,6 @@ Bu Docker yığını aşağıdaki uygulamaları içerir. Her biri medya otomasyo
 
 ---
 
-## 📚 Readarr
-**English**: Book and audiobook manager that organizes your digital library and finds new releases.
-**Türkçe**: Kitap ve sesli kitap yöneticisi. Dijital kütüphanenizi düzenler ve yeni yayınları bulur.
-
-**Key Features / Öne Çıkan Özellikler**:
-- Author series tracking / Yazar serisi takibi
-- Multiple format support / Çoklu format desteği
-- Calibre integration / Calibre entegrasyonu
-
----
 
 ## 🔍 Prowlarr
 **English**: Central hub for managing all your torrent and usenet indexers across all *arr apps.
@@ -94,25 +84,15 @@ Bu Docker yığını aşağıdaki uygulamaları içerir. Her biri medya otomasyo
 
 ---
 
-## 🎬 Jellyfin
-**English**: Free, open-source media server that streams your content to any device.
-**Türkçe**: Ücretsiz, açık kaynak medya sunucusu. İçeriklerinizi herhangi bir cihaza yayınlar.
 
-**Key Features / Öne Çıkan Özellikler**:
-- No premium features / Premium özellik yok
-- Wide device support / Geniş cihaz desteği
-- Community plugins / Topluluk eklentileri
-
----
-
-## 🎬 Plex
-**English**: Popular media server with extensive device support and remote access capabilities.
-**Türkçe**: Geniş cihaz desteği ve uzaktan erişim özellikleri olan popüler medya sunucusu.
+## 🎬 Emby
+**English**: Media server with polished apps; some features (hardware transcoding, mobile apps) need Emby Premiere.
+**Türkçe**: Şık uygulamaları olan medya sunucusu; bazı özellikler (donanım transcode, mobil uygulamalar) Emby Premiere ister.
 
 **Key Features / Öne Çıkan Özellikler**:
 - Automatic metadata / Otomatik metadata
 - User sharing / Kullanıcı paylaşımı
-- Mobile apps / Mobil uygulamalar
+- Live TV & DVR / Canlı TV ve kayıt
 
 ---
 
@@ -182,45 +162,25 @@ Bu Docker yığını aşağıdaki uygulamaları içerir. Her biri medya otomasyo
 
 ---
 
-## 📊 Tautulli
-**English**: Plex monitoring and analytics tool that tracks viewing statistics and user activity.
-**Türkçe**: Plex izleme ve analitik aracı. İzleme istatistiklerini ve kullanıcı aktivitelerini takip eder.
 
-**Key Features / Öne Çıkan Özellikler**:
-- Detailed reports / Ayrıntılı raporlar
-- User statistics / Kullanıcı istatistikleri
-- Notification automation / Bildirim otomasyonu
-
----
-
-## 📊 Jellystat
-**English**: Jellyfin analytics dashboard that visualizes your media consumption patterns.
-**Türkçe**: Medya tüketim alışkanlıklarınızı görselleştiren Jellyfin analitik dashboard'u.
-
-**Key Features / Öne Çıkan Özellikler**:
-- Web-based dashboard / Web tabanlı dashboard
-- API integration / API entegrasyonu
-- Viewing graphs / İzleme grafikleri
-
----
 
 ## 🔧 How They Work Together / Nasıl Birlikte Çalışırlar
 
 **English**: 
 1. **Prowlarr** manages all your search sources
-2. **Sonarr/Radarr/Lidarr/Readarr** use these sources to find content
+2. **Sonarr/Radarr/Lidarr** use these sources to find content
 3. **qBittorrent** downloads the files
 4. **Bazarr** finds subtitles
-5. **Jellyfin/Plex** serves the media to your devices
+5. **Emby** serves the media to your devices
 6. **Homarr** gives you a single dashboard for everything
 7. **Watchtower** keeps everything updated
 
 **Türkçe**:
 1. **Prowlarr** tüm arama kaynaklarınızı yönetir
-2. **Sonarr/Radarr/Lidarr/Readarr** bu kaynakları kullanarak içerik bulur
+2. **Sonarr/Radarr/Lidarr** bu kaynakları kullanarak içerik bulur
 3. **qBittorrent** dosyaları indirir
 4. **Bazarr** altyazıları bulur
-5. **Jellyfin/Plex** medyayı cihazlarınıza sunar
+5. **Emby** medyayı cihazlarınıza sunar
 6. **Homarr** her şey için tek bir kontrol paneli verir
 7. **Watchtower** her şeyi güncel tutar
 
@@ -232,12 +192,12 @@ Bu Docker yığını aşağıdaki uygulamaları içerir. Her biri medya otomasyo
 - Start with **Prowlarr** to set up your indexers
 - Configure **qBittorrent** with proper categories
 - Add your first show/movie in **Sonarr/Radarr**
-- Set up **Jellyfin** or **Plex** to serve your media
+- Set up **Emby** to serve your media
 - Use **Homarr** as your main dashboard
 
 **Türkçe**:
 - **Prowlarr** ile indeksleyicilerinizi kurarak başlayın
 - **qBittorrent**'i uygun kategorilerle yapılandırın
 - **Sonarr/Radarr**'a ilk dizinizi/filminizi ekleyin
-- Medyanızı sunmak için **Jellyfin** veya **Plex** kurun
+- Medyanızı sunmak için **Emby** kurun
 - Ana kontrol paneli olarak **Homarr** kullanın
