@@ -1,0 +1,440 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>arr-stack</title>
+<meta name="description" content="A self-configuring Docker media server: request, download, subtitle, and stream.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%23f5b544'/><path d='M12 9l12 7-12 7z' fill='%23111'/></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0d0f14; --panel: #151922; --line: #252b38; --text: #e7eaf0; --muted: #9aa3b5;
+    --accent: #f5b544; --accent-2: #5ec2ff;
+  }
+  @media (prefers-color-scheme: light) {
+    :root { --bg: #fbfaf7; --panel: #ffffff; --line: #e6e2d9; --text: #1b1d22; --muted: #5d6472;
+            --accent: #c47f00; --accent-2: #0a7bbf; }
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body { margin: 0; background: var(--bg); color: var(--text);
+         font: 16px/1.65 Inter, system-ui, sans-serif; }
+  .wrap { max-width: 980px; margin: 0 auto; padding: 0 16px; }
+  a { color: var(--accent-2); }
+  code, pre { font-family: "JetBrains Mono", ui-monospace, monospace; }
+  pre { background: var(--panel); border: 1px solid var(--line); border-radius: 10px;
+        padding: 16px; overflow-x: auto; font-size: 14px; line-height: 1.5; }
+  code { font-size: .92em; }
+  p { max-width: 70ch; }
+
+  /* language switch: everything tagged with the other language is hidden */
+  html[data-lang="en"] [lang="tr"], html[data-lang="tr"] [lang="en"] { display: none; }
+
+  nav { display: flex; justify-content: space-between; align-items: center; padding: 20px 0; gap: 12px; }
+  .logo { font-weight: 800; letter-spacing: -.02em; text-decoration: none; color: var(--text); }
+  .logo span { color: var(--accent); }
+  .nav-right { display: flex; gap: 12px; align-items: center; }
+  .btn { display: inline-block; padding: 10px 18px; border-radius: 999px; text-decoration: none;
+         font-weight: 600; border: 1px solid var(--line); color: var(--text); background: var(--panel); cursor: pointer; font: inherit; }
+  .btn.primary { background: var(--accent); color: #111; border-color: var(--accent); }
+
+  .toc { display: flex; flex-wrap: wrap; gap: 8px; margin: 32px 0 0; padding: 0; list-style: none; }
+  .toc a { display: inline-block; padding: 6px 12px; border: 1px solid var(--line); border-radius: 999px;
+           font-size: .88rem; color: var(--muted); text-decoration: none; }
+  .toc a:hover { color: var(--text); border-color: var(--accent); }
+
+  header.hero { padding: 56px 0 40px; }
+  .hero h1 { font-size: clamp(2.2rem, 6vw, 3.8rem); line-height: 1.08; letter-spacing: -.03em; margin: 0 0 20px; max-width: 14ch; }
+  .hero h1 em { font-style: normal; color: var(--accent); }
+  .hero p { font-size: 1.15rem; color: var(--muted); margin: 0 0 28px; }
+  .cta { display: flex; gap: 12px; flex-wrap: wrap; }
+
+  section { padding: 56px 0; border-top: 1px solid var(--line); scroll-margin-top: 16px; }
+  h2 { font-size: 1.7rem; letter-spacing: -.02em; margin: 0 0 8px; }
+  h3 { letter-spacing: -.01em; }
+  .lead { color: var(--muted); margin: 0 0 28px; font-size: 1.05rem; }
+  .eyebrow { font: 600 .78rem/1 "JetBrains Mono", monospace; color: var(--accent); text-transform: uppercase;
+             letter-spacing: .08em; margin-bottom: 10px; }
+
+  .two { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+  .box { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 20px; }
+  .box h3 { margin: 0 0 8px; font-size: 1.05rem; }
+  .box p, .box li { color: var(--muted); font-size: .95rem; }
+  .box ul { margin: 0; padding-left: 20px; }
+
+  .flow { display: grid; gap: 12px; counter-reset: step; }
+  .step { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 18px 20px 18px 64px; position: relative; }
+  .step::before { counter-increment: step; content: counter(step); position: absolute; left: 18px; top: 18px;
+                  display: grid; place-items: center; width: 30px; height: 30px; border-radius: 50%;
+                  background: var(--accent); color: #111; font-weight: 800; font-size: 14px; }
+  .step h3 { margin: 0 0 4px; font-size: 1.05rem; }
+  .step p { margin: 0; color: var(--muted); font-size: .95rem; }
+  .step .who { font: 600 .8rem "JetBrains Mono", monospace; color: var(--accent-2); }
+
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px; }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 18px;
+          display: flex; gap: 14px; align-items: flex-start; }
+  .card img { width: 40px; height: 40px; flex: none; }
+  .card h3 { margin: 0; font-size: 1.05rem; display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap; }
+  .card p { margin: 6px 0 0; color: var(--muted); font-size: .92rem; }
+  .port { font-family: "JetBrains Mono", monospace; font-size: .78rem; color: var(--accent); font-weight: 400; }
+
+  ul.checks { list-style: none; padding: 0; margin: 0; display: grid; gap: 10px; }
+  ul.checks li { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 14px 18px 14px 46px; position: relative; }
+  ul.checks li::before { content: "✓"; position: absolute; left: 18px; top: 14px; color: var(--accent); font-weight: 800; }
+  ul.checks b { display: block; margin-bottom: 2px; }
+  ul.checks span.d { color: var(--muted); font-size: .94rem; }
+
+  details { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 14px 18px; margin-bottom: 10px; }
+  summary { cursor: pointer; font-weight: 600; }
+  details p { color: var(--muted); margin: 10px 0 0; }
+
+  .note { border-left: 3px solid var(--accent); padding: 4px 0 4px 16px; color: var(--muted); margin: 20px 0 0; }
+
+  footer { padding: 32px 0 48px; color: var(--muted); font-size: .9rem; border-top: 1px solid var(--line); }
+
+  @media (max-width: 760px) {
+    .two { grid-template-columns: 1fr; }
+    header.hero { padding: 32px 0; }
+    .grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<nav>
+  <a class="logo" href="#">arr<span>-</span>stack</a>
+  <div class="nav-right">
+    <button class="btn" id="lang" type="button">TR</button>
+    <a class="btn" href="https://github.com/MihrimatriX/arr-stack">GitHub</a>
+  </div>
+</nav>
+
+<header class="hero">
+  <h1 lang="en">Your own media server, <em>set up for you.</em></h1>
+  <h1 lang="tr">Kendi medya sunucun, <em>kurulumu hazır.</em></h1>
+  <p lang="en">Ask for a movie, show, or album. The stack finds it, downloads it, adds subtitles, and puts it in a library you can watch on your TV, phone, or browser. One command connects all eleven apps to each other.</p>
+  <p lang="tr">İzlemek istediğin filmi, diziyi ya da albümü seç. Sistem onu buluyor, indiriyor, altyazısını ekliyor ve kütüphanene koyuyor. Sen de TV'den, telefondan ya da tarayıcıdan izliyorsun. On bir uygulamanın birbirine bağlanması tek bir komutla hallediliyor.</p>
+  <div class="cta">
+    <a class="btn primary" href="#start"><span lang="en">Get started</span><span lang="tr">Hemen başla</span></a>
+    <a class="btn" href="https://github.com/MihrimatriX/arr-stack#readme">README</a>
+  </div>
+  <ul class="toc" lang="en">
+    <li><a href="#what">What it is</a></li><li><a href="#flow">How it works</a></li>
+    <li><a href="#boot">First boot</a></li><li><a href="#services">Apps</a></li>
+    <li><a href="#setup">Auto setup</a></li><li><a href="#start">Install</a></li>
+    <li><a href="#use">Daily use</a></li><li><a href="#faq">FAQ</a></li>
+  </ul>
+  <ul class="toc" lang="tr">
+    <li><a href="#what">Nedir?</a></li><li><a href="#flow">Nasıl çalışır?</a></li>
+    <li><a href="#boot">İlk açılış</a></li><li><a href="#services">Uygulamalar</a></li>
+    <li><a href="#setup">Otomatik ayarlar</a></li><li><a href="#start">Kurulum</a></li>
+    <li><a href="#use">Kullanım</a></li><li><a href="#faq">SSS</a></li>
+  </ul>
+</header>
+
+<section id="what">
+  <div class="eyebrow" lang="en">The idea</div><div class="eyebrow" lang="tr">Fikir</div>
+  <h2 lang="en">What is this?</h2>
+  <h2 lang="tr">Bu proje ne yapıyor?</h2>
+  <div lang="en">
+    <p>There is a well-known family of open source apps, nicknamed the "*arr" apps (Sonarr, Radarr, Lidarr, Prowlarr), that together run a personal media library. Each one does a small job: one tracks TV shows, one tracks movies, one manages search sources. Put them together with a download client and a media server, and you get something close to a private streaming service that fills itself.</p>
+    <p>The catch is that these apps don't know about each other out of the box. Every guide asks you to copy API keys from one app to another, set folder paths, add download clients, and click through a first-run wizard in each UI. It's easy to get one setting wrong and spend an hour finding out why nothing downloads.</p>
+    <p>arr-stack packs all of them into one <code>docker-compose.yml</code> and adds a setup script that does that wiring for you. You edit one <code>.env</code> file, run one command, and log in to a system that already works.</p>
+  </div>
+  <div lang="tr">
+    <p>Kişisel medya kütüphanesi kurmak isteyenlerin sıkça kullandığı, "*arr" diye anılan açık kaynak uygulamalar var: Sonarr, Radarr, Lidarr, Prowlarr. Her birinin kendi görevi var. Biri dizileri, biri filmleri takip ediyor, bir diğeri arama kaynaklarını yönetiyor. Bunlara bir indirme programı ve bir medya sunucusu da eklenince, kendi kendini dolduran kişisel bir Netflix gibi bir şey ortaya çıkıyor.</p>
+    <p>İşin zor tarafı, bu uygulamaların kurulduklarında birbirinden haberi olmaması. Rehberlerin çoğu senden API anahtarlarını bir uygulamadan diğerine kopyalamanı, klasör yollarını girmeni, indirme programını tanıtmanı ve her uygulamanın kurulum ekranını tek tek geçmeni istiyor. Tek bir ayarı yanlış girmek, neden hiçbir şeyin inmediğini bulmak için saatler harcamana yetiyor.</p>
+    <p>arr-stack bu uygulamaların hepsini tek bir <code>docker-compose.yml</code> dosyasında topluyor. Yanına da bu bağlantıları senin yerine kuran bir script ekliyor. Sen yalnızca <code>.env</code> dosyasını düzenleyip tek bir komut çalıştırıyorsun. Giriş yaptığında her şey çalışır durumda oluyor.</p>
+  </div>
+  <div class="two" style="margin-top:24px">
+    <div class="box" lang="en"><h3>Good fit if you</h3><ul>
+      <li>have a PC, mini PC, or home server that stays on</li>
+      <li>want movies, shows, and music in one library for the whole house</li>
+      <li>would rather not configure eleven apps by hand</li>
+      <li>are fine running a few Docker commands</li></ul></div>
+    <div class="box" lang="tr"><h3>Kimler için uygun?</h3><ul>
+      <li>Sürekli açık kalan bir bilgisayarı, mini PC'si ya da ev sunucusu olanlar</li>
+      <li>Film, dizi ve müziği evdeki herkes için tek bir kütüphanede toplamak isteyenler</li>
+      <li>On bir uygulamayı tek tek ayarlamakla uğraşmak istemeyenler</li>
+      <li>Birkaç Docker komutu çalıştırmaktan çekinmeyenler</li></ul></div>
+    <div class="box" lang="en"><h3>What you get on day one</h3><ul>
+      <li>one username and password for every app</li>
+      <li>Movies, Shows, and Music libraries in Emby</li>
+      <li>a request page and a dashboard with a release calendar</li>
+      <li>Turkish and English subtitles by default</li></ul></div>
+    <div class="box" lang="tr"><h3>Kurulumdan hemen sonra</h3><ul>
+      <li>Bütün uygulamalara aynı kullanıcı adı ve şifreyle giriyorsun</li>
+      <li>Emby'de film, dizi ve müzik kütüphanelerin hazır oluyor</li>
+      <li>Bir istek sayfan ve yayın takvimli bir ana panelin oluyor</li>
+      <li>Altyazılar varsayılan olarak Türkçe ve İngilizce iniyor</li></ul></div>
+  </div>
+</section>
+
+<section id="flow">
+  <div class="eyebrow" lang="en">The pipeline</div><div class="eyebrow" lang="tr">Akış</div>
+  <h2 lang="en">How a request travels</h2>
+  <h2 lang="tr">Bir istek nasıl ilerliyor?</h2>
+  <p class="lead" lang="en">Say you want to watch a movie that came out last month. Here is what happens after you click "Request".</p>
+  <p class="lead" lang="tr">Diyelim ki geçen ay vizyona girmiş bir filmi izlemek istiyorsun. "Request" düğmesine bastıktan sonra şunlar oluyor:</p>
+  <div class="flow">
+    <div class="step"><span class="who">Seerr</span>
+      <h3 lang="en">You ask for it</h3><h3 lang="tr">Filmi istiyorsun</h3>
+      <p lang="en">Seerr shows posters, trailers, and descriptions, much like a streaming app. You search for the movie and click Request. Anyone in the house with an Emby account can do this.</p>
+      <p lang="tr">Seerr, tıpkı bir dizi-film platformu gibi afişleri, fragmanları ve özetleri gösteriyor. Filmi aratıp "Request" düğmesine basıyorsun. Emby hesabı olan herkes bunu yapabiliyor.</p></div>
+    <div class="step"><span class="who">Radarr / Sonarr / Lidarr</span>
+      <h3 lang="en">The right app takes over</h3><h3 lang="tr">İş ilgili uygulamaya geçiyor</h3>
+      <p lang="en">Movies go to Radarr, shows to Sonarr, music to Lidarr. The app adds the title to its watch list and decides what quality it wants. For a show, Sonarr will keep watching for new episodes as long as the show is monitored.</p>
+      <p lang="tr">Filmlerle Radarr, dizilerle Sonarr, müzikle Lidarr ilgileniyor. Uygulama içeriği takip listesine alıyor ve hangi kalitede indireceğine karar veriyor. Dizilerde Sonarr, takibi bırakmadığın sürece yeni çıkan bölümleri de kendiliğinden indiriyor.</p></div>
+    <div class="step"><span class="who">Prowlarr + FlareSolverr</span>
+      <h3 lang="en">It searches</h3><h3 lang="tr">Arama yapılıyor</h3>
+      <p lang="en">Prowlarr keeps the list of indexers (the sites that list releases) and searches all of them at once. Some sites sit behind a Cloudflare check; FlareSolverr opens those in a headless browser so the search still works.</p>
+      <p lang="tr">Prowlarr, indexer'ların (yani içerikleri listeleyen sitelerin) listesini tutuyor ve hepsinde aynı anda arama yapıyor. Bazı siteler Cloudflare korumasının arkasında. FlareSolverr bu siteleri arka planda bir tarayıcıyla açıyor, böylece arama takılmadan devam ediyor.</p></div>
+    <div class="step"><span class="who">qBittorrent</span>
+      <h3 lang="en">It downloads</h3><h3 lang="tr">İndirme başlıyor</h3>
+      <p lang="en">Radarr picks the best result and hands it to qBittorrent under the <code>movies</code> category, so the file lands in <code>downloads/movies</code>. Seeding stops at ratio 1.</p>
+      <p lang="tr">Radarr en iyi sonucu seçip <code>movies</code> kategorisiyle qBittorrent'e gönderiyor. Dosya <code>downloads/movies</code> klasörüne iniyor. Paylaşım oranı 1'e ulaşınca seed duruyor.</p></div>
+    <div class="step"><span class="who">Radarr + Bazarr</span>
+      <h3 lang="en">It gets tidied up</h3><h3 lang="tr">Dosya düzenleniyor</h3>
+      <p lang="en">When the download is done, Radarr moves the file to <code>media/movies</code> with a clean name like <code>Movie Title (2026)</code>. Bazarr notices the new file and fetches subtitles in your languages.</p>
+      <p lang="tr">İndirme bitince Radarr dosyayı <code>Film Adı (2026)</code> gibi düzgün bir isimle <code>media/movies</code> klasörüne taşıyor. Bazarr yeni dosyayı fark edip seçtiğin dillerde altyazı indiriyor.</p></div>
+    <div class="step"><span class="who">Emby</span>
+      <h3 lang="en">You watch it</h3><h3 lang="tr">İzlemeye hazır</h3>
+      <p lang="en">Radarr tells Emby to rescan its library. The movie shows up with poster and metadata, ready to play in a browser or in the Emby apps for TV, phone, and tablet.</p>
+      <p lang="tr">Radarr, Emby'ye kütüphaneyi yeniden taramasını söylüyor. Film afişi ve bilgileriyle birlikte kütüphanede beliriyor. Artık tarayıcıdan ya da TV, telefon ve tabletteki Emby uygulamasından izleyebilirsin.</p></div>
+  </div>
+</section>
+
+<section id="boot">
+  <div class="eyebrow" lang="en">Under the hood</div><div class="eyebrow" lang="tr">Arka planda</div>
+  <h2 lang="en">What happens on the first boot</h2>
+  <h2 lang="tr">İlk açılışta neler oluyor?</h2>
+  <p class="lead" lang="en">Two short-lived helper containers run <code>setup/bootstrap.py</code>. They do their work in a fixed order and then remove themselves.</p>
+  <p class="lead" lang="tr"><code>setup/bootstrap.py</code> script'ini, işi bitince kapanan iki yardımcı container çalıştırıyor. Adımlar her zaman aynı sırayla ilerliyor ve sonunda bu container'lar kendilerini siliyor.</p>
+  <div class="flow">
+    <div class="step"><span class="who">arr-seed</span>
+      <h3 lang="en">Config files are written first</h3><h3 lang="tr">Önce ayar dosyaları yazılıyor</h3>
+      <p lang="en">Before any app starts, arr-seed generates API keys for Sonarr, Radarr, Lidarr, and Prowlarr and writes them into their config files. It also writes the qBittorrent login and tells Bazarr where Sonarr and Radarr are. Knowing the keys up front means nothing has to be copied later.</p>
+      <p lang="tr">Uygulamalar daha açılmadan arr-seed devreye giriyor. Sonarr, Radarr, Lidarr ve Prowlarr için API anahtarlarını üretip ayar dosyalarına yazıyor. qBittorrent'in giriş bilgilerini de yazıyor ve Bazarr'a Sonarr ile Radarr'ın adresini veriyor. Anahtarlar en baştan belli olduğu için sonradan hiçbir şeyi kopyalamak gerekmiyor.</p></div>
+    <div class="step"><span class="who">docker compose</span>
+      <h3 lang="en">The apps start</h3><h3 lang="tr">Uygulamalar açılıyor</h3>
+      <p lang="en">The apps that depend on those files wait until arr-seed has finished, then start with the keys already in place. The first start can take a few minutes while each app sets up its database.</p>
+      <p lang="tr">Bu dosyalara ihtiyacı olan uygulamalar arr-seed'in işini bitirmesini bekliyor, sonra anahtarları hazır bulup açılıyor. Her uygulama ilk açılışta kendi veritabanını oluşturduğu için bu birkaç dakika sürebilir.</p></div>
+    <div class="step"><span class="who">arr-setup</span>
+      <h3 lang="en">Everything gets connected</h3><h3 lang="tr">Uygulamalar birbirine bağlanıyor</h3>
+      <p lang="en">arr-setup waits for each app to answer, then goes through them one by one over their APIs: qBittorrent, Sonarr, Radarr, Lidarr, Prowlarr, Bazarr, Emby, Seerr, Homarr. If one step fails, it logs the error and moves on to the next.</p>
+      <p lang="tr">arr-setup her uygulamanın yanıt vermesini bekliyor, ardından API'leri üzerinden sırayla hepsini ayarlıyor: qBittorrent, Sonarr, Radarr, Lidarr, Prowlarr, Bazarr, Emby, Seerr ve Homarr. Bir adımda hata çıkarsa bunu loga yazıp bir sonrakine geçiyor.</p></div>
+    <div class="step"><span class="who">cleanup</span>
+      <h3 lang="en">The helpers remove themselves</h3><h3 lang="tr">Yardımcı container'lar siliniyor</h3>
+      <p lang="en">If every step worked, arr-seed and arr-setup delete their own containers so they don't clutter Docker Desktop. If something failed, arr-setup stays so you can read <code>docker logs arr-setup</code>.</p>
+      <p lang="tr">Her şey yolunda gittiyse arr-seed ve arr-setup, Docker Desktop'ta boşuna yer kaplamasınlar diye kendilerini siliyor. Bir sorun çıktıysa arr-setup silinmiyor; <code>docker logs arr-setup</code> komutuyla ne olduğuna bakabilirsin.</p></div>
+  </div>
+  <p class="note" lang="en">The script checks before it changes anything, so running <code>docker compose up -d</code> again is safe. It adds what's missing and leaves the rest alone, including the changes you made to the Homarr board.</p>
+  <p class="note" lang="tr">Script bir ayarı değiştirmeden önce mevcut duruma bakıyor. Bu yüzden <code>docker compose up -d</code> komutunu istediğin kadar tekrar çalıştırabilirsin. Yalnızca eksik olanları tamamlıyor, Homarr panosunda yaptığın değişiklikler de dahil olmak üzere geri kalan her şeyi olduğu gibi bırakıyor.</p>
+</section>
+
+<section id="services">
+  <div class="eyebrow" lang="en">The apps</div><div class="eyebrow" lang="tr">Uygulamalar</div>
+  <h2 lang="en">What's inside</h2>
+  <h2 lang="tr">Neler var?</h2>
+  <p class="lead" lang="en">Every app runs in its own Docker container. The number is the port: open <code>http://localhost:PORT</code> in a browser on the same machine. <a href="https://github.com/MihrimatriX/arr-stack/blob/main/SERVICES.md">More detail per app</a>.</p>
+  <p class="lead" lang="tr">Her uygulama kendi Docker container'ında çalışıyor. Yanındaki numara port numarası; aynı bilgisayardan tarayıcıda <code>http://localhost:PORT</code> adresini açman yeterli. <a href="https://github.com/MihrimatriX/arr-stack/blob/main/SERVICES.md">Her uygulamanın ayrıntıları</a>.</p>
+  <div class="grid" id="service-grid"></div>
+</section>
+
+<section id="setup">
+  <div class="eyebrow" lang="en">Auto setup</div><div class="eyebrow" lang="tr">Otomatik ayarlar</div>
+  <h2 lang="en">What you don't have to configure</h2>
+  <h2 lang="tr">Senin uğraşmana gerek kalmayanlar</h2>
+  <p class="lead" lang="en">These are the steps a typical guide walks you through by hand. Here the script does them.</p>
+  <p class="lead" lang="tr">Kurulum rehberlerinde elle yapman istenen adımların hepsini burada script yapıyor.</p>
+  <ul class="checks" lang="en">
+    <li><b>One login everywhere</b><span class="d">Sonarr, Radarr, Lidarr, Prowlarr, qBittorrent, Bazarr, Emby, and Homarr all use <code>STACK_USER</code> and <code>STACK_PASSWORD</code>. Seerr signs you in with the same Emby account.</span></li>
+    <li><b>Download client and folders</b><span class="d">Each *arr app gets qBittorrent as its download client with its own category (<code>tv</code>, <code>movies</code>, <code>music</code>) and its library folder as the root folder.</span></li>
+    <li><b>Indexers</b><span class="d">Prowlarr is linked to Sonarr, Radarr, and Lidarr with full sync, so any indexer you add there shows up in all three. The indexers listed in <code>PROWLARR_INDEXERS</code> are added for you. One that fails its connection test is skipped with a message in the log.</span></li>
+    <li><b>Cloudflare</b><span class="d">FlareSolverr is added to Prowlarr as a proxy and every indexer is tagged to use it when a site asks for a Cloudflare check.</span></li>
+    <li><b>Subtitles</b><span class="d">Bazarr is linked to Sonarr and Radarr, gets a language profile from <code>SUBTITLE_LANGUAGES</code> (default Turkish, then English), and turns on providers that work without an account, including turkcealtyazi.org, YIFY Subtitles, and Gestdown.</span></li>
+    <li><b>Media server</b><span class="d">Emby's startup wizard is completed with your login, and Movies, Shows, and Music libraries are created. Each *arr app tells Emby to rescan after an import, which matters on Windows where Docker doesn't pass file change events through.</span></li>
+    <li><b>Requests</b><span class="d">Seerr connects to Emby and imports its libraries, then links Radarr for movies and Sonarr for shows with their default quality profile.</span></li>
+    <li><b>Dashboard</b><span class="d">Homarr gets an owner account, a tile for every app with a status check, API connections to Sonarr, Radarr, Lidarr, and Seerr, and a calendar of upcoming releases.</span></li>
+  </ul>
+  <ul class="checks" lang="tr">
+    <li><b>Her yerde aynı giriş bilgileri</b><span class="d">Sonarr, Radarr, Lidarr, Prowlarr, qBittorrent, Bazarr, Emby ve Homarr'a aynı <code>STACK_USER</code> ve <code>STACK_PASSWORD</code> ile giriyorsun. Seerr'e de aynı Emby hesabınla giriş yapıyorsun.</span></li>
+    <li><b>İndirme programı ve klasörler</b><span class="d">Her *arr uygulamasına indirme programı olarak qBittorrent ekleniyor, her biri kendi kategorisini (<code>tv</code>, <code>movies</code>, <code>music</code>) kullanıyor. Kütüphane klasörleri de hazır tanımlanıyor.</span></li>
+    <li><b>Indexer'lar</b><span class="d">Prowlarr, Sonarr, Radarr ve Lidarr'a bağlanıyor ve tam senkronize çalışıyor. Prowlarr'a eklediğin her indexer üç uygulamada da otomatik olarak görünüyor. <code>PROWLARR_INDEXERS</code> içinde yazanlar baştan ekleniyor. Bağlantı testini geçemeyen olursa atlanıyor ve loga not düşülüyor.</span></li>
+    <li><b>Cloudflare</b><span class="d">FlareSolverr, Prowlarr'a proxy olarak ekleniyor. Bir site Cloudflare doğrulaması isterse tüm indexer'lar otomatik olarak onu kullanıyor.</span></li>
+    <li><b>Altyazılar</b><span class="d">Bazarr, Sonarr ve Radarr'a bağlanıyor ve <code>SUBTITLE_LANGUAGES</code> ayarına göre bir dil profili oluşturuyor (varsayılan olarak önce Türkçe, sonra İngilizce). turkcealtyazi.org, YIFY Subtitles ve Gestdown gibi üyelik istemeyen sağlayıcılar açılıyor.</span></li>
+    <li><b>Medya sunucusu</b><span class="d">Emby'nin ilk kurulum ekranı senin bilgilerinle geçiliyor, film, dizi ve müzik kütüphaneleri oluşturuluyor. *arr uygulamaları her yeni dosyadan sonra Emby'ye kütüphaneyi taratıyor. Bu özellikle Windows'ta önemli, çünkü orada Docker yeni eklenen dosyaları container'a haber vermiyor.</span></li>
+    <li><b>İstekler</b><span class="d">Seerr, Emby'ye bağlanıp kütüphaneleri içeri alıyor. Ardından filmler için Radarr'ı, diziler için Sonarr'ı varsayılan kalite profilleriyle bağlıyor.</span></li>
+    <li><b>Ana panel</b><span class="d">Homarr'da yönetici hesabı açılıyor. Her uygulama için çalışıp çalışmadığını gösteren bir kart ekleniyor, Sonarr, Radarr, Lidarr ve Seerr'e API bağlantısı kuruluyor ve yaklaşan yayınları gösteren bir takvim yerleştiriliyor.</span></li>
+  </ul>
+</section>
+
+<section id="start">
+  <div class="eyebrow" lang="en">Install</div><div class="eyebrow" lang="tr">Kurulum</div>
+  <h2 lang="en">Start in three commands</h2>
+  <h2 lang="tr">Üç komutla kurulum</h2>
+  <p class="lead" lang="en">You need Docker: Docker Desktop on Windows or macOS, Docker Engine on Linux. Leave room on the disk for your library; downloads and media both live inside the project folder unless you point them elsewhere in <code>.env</code>.</p>
+  <p class="lead" lang="tr">İhtiyacın olan tek şey Docker: Windows ve macOS'ta Docker Desktop, Linux'ta Docker Engine. Diskte kütüphanen için yer ayırmayı unutma. <code>.env</code> dosyasında başka bir yer belirtmediğin sürece indirmeler de medya dosyaları da proje klasöründe tutuluyor.</p>
+<pre><code>git clone https://github.com/MihrimatriX/arr-stack.git && cd arr-stack
+cp .env.example .env
+docker compose up -d && docker logs -f arr-setup</code></pre>
+  <div class="two">
+    <div class="box" lang="en"><h3>Before the first start</h3>
+      <p>Open <code>.env</code> and change <code>STACK_PASSWORD</code> from <code>changeme</code>. Check <code>TZ</code> and, if you want, the indexer and subtitle lists. Port numbers only need changing if something else on your machine already uses them.</p></div>
+    <div class="box" lang="tr"><h3>İlk çalıştırmadan önce</h3>
+      <p><code>.env</code> dosyasını aç ve <code>STACK_PASSWORD</code> değerini varsayılan <code>changeme</code> şifresinden farklı bir şeyle değiştir. <code>TZ</code> ayarını kontrol et, istersen indexer ve altyazı dili listelerini de düzenle. Portları ancak bilgisayarında aynı portu kullanan başka bir program varsa değiştirmen gerekir.</p></div>
+    <div class="box" lang="en"><h3>When it's done</h3>
+      <p>The log ends with <code>done</code>. Open <a href="http://localhost:7575">localhost:7575</a> for Homarr and sign in. Homarr requires a symbol in the password; if yours has none, use it with <code>!</code> added at the end, only for Homarr.</p></div>
+    <div class="box" lang="tr"><h3>Kurulum bitince</h3>
+      <p>Log, <code>done</code> satırıyla bitiyor. Homarr'ı açmak için <a href="http://localhost:7575">localhost:7575</a> adresine git ve giriş yap. Homarr şifrede en az bir sembol istiyor. Şifrende sembol yoksa Homarr'a girerken sonuna <code>!</code> ekle; diğer uygulamalarda şifren aynen geçerli.</p></div>
+  </div>
+</section>
+
+<section id="use">
+  <div class="eyebrow" lang="en">Daily use</div><div class="eyebrow" lang="tr">Kullanım</div>
+  <h2 lang="en">Using it after setup</h2>
+  <h2 lang="tr">Kurulumdan sonra nasıl kullanılıyor?</h2>
+  <div class="two">
+    <div class="box" lang="en"><h3>Add a movie or show</h3>
+      <p>Open Seerr (port 5055), sign in with your stack login, search, and click Request. You can also add titles straight in Radarr or Sonarr if you want to pick the quality profile yourself.</p></div>
+    <div class="box" lang="tr"><h3>Film ya da dizi eklemek</h3>
+      <p>Seerr'i aç (port 5055), kendi kullanıcı adın ve şifrenle giriş yap, istediğin içeriği arat ve "Request" düğmesine bas. Kalite profilini kendin seçmek istersen içeriği doğrudan Radarr'a ya da Sonarr'a da ekleyebilirsin.</p></div>
+    <div class="box" lang="en"><h3>Add music</h3>
+      <p>Seerr handles movies and shows only. For music, open Lidarr (port 8686), search for an artist, and add it. Lidarr will fetch the albums and keep watching for new ones.</p></div>
+    <div class="box" lang="tr"><h3>Müzik eklemek</h3>
+      <p>Seerr yalnızca film ve dizilerle çalışıyor. Müzik için Lidarr'ı aç (port 8686), bir sanatçı arat ve ekle. Lidarr sanatçının albümlerini indiriyor, yeni albüm çıktığında onu da indiriyor.</p></div>
+    <div class="box" lang="en"><h3>Watch</h3>
+      <p>Open Emby (port 8096) in a browser, or install the Emby app on your TV or phone and point it at your computer's address on the local network.</p></div>
+    <div class="box" lang="tr"><h3>İzlemek</h3>
+      <p>Emby'yi tarayıcıda aç (port 8096). TV'den ya da telefondan izlemek için Emby uygulamasını kur ve sunucu adresi olarak bilgisayarının ev ağındaki IP adresini gir.</p></div>
+    <div class="box" lang="en"><h3>Keep it running</h3>
+      <p>Watchtower checks for new images every night at 04:30 and updates only this stack's containers, removing old images afterwards. Back up <code>config/</code> and <code>.env</code> and you can rebuild the whole setup on another machine.</p></div>
+    <div class="box" lang="tr"><h3>Bakım ve yedekleme</h3>
+      <p>Watchtower her gece 04:30'da güncelleme olup olmadığına bakıyor, yalnızca bu stack'teki container'ları güncelliyor ve eski imajları siliyor. <code>config/</code> klasörünü ve <code>.env</code> dosyasını yedeklersen kurulumun tamamını başka bir bilgisayarda aynen yeniden kurabilirsin.</p></div>
+  </div>
+<pre lang="en"><code>arr-stack/
+├── docker-compose.yml   # every service
+├── .env                 # your settings (copied from .env.example)
+├── setup/bootstrap.py   # first-run wiring
+├── config/              # each app's settings and database
+├── downloads/           # tv/ movies/ music/ categories from qBittorrent
+└── media/
+    ├── movies/          # what Emby shows as Movies
+    ├── tv/              # Shows
+    └── music/           # Music</code></pre>
+<pre lang="tr"><code>arr-stack/
+├── docker-compose.yml   # tüm servisler
+├── .env                 # senin ayarların (.env.example'dan kopyalanır)
+├── setup/bootstrap.py   # ilk kurulum script'i
+├── config/              # uygulamaların ayarları ve veritabanları
+├── downloads/           # qBittorrent'in tv/ movies/ music/ klasörleri
+└── media/
+    ├── movies/          # Emby'deki film kütüphanesi
+    ├── tv/              # dizi kütüphanesi
+    └── music/           # müzik kütüphanesi</code></pre>
+</section>
+
+<section id="faq">
+  <div class="eyebrow" lang="en">Questions</div><div class="eyebrow" lang="tr">Sorular</div>
+  <h2 lang="en">Frequently asked</h2>
+  <h2 lang="tr">Sık sorulan sorular</h2>
+  <div lang="en">
+    <details><summary>Setup says it failed. What now?</summary>
+      <p>Run <code>docker logs arr-setup</code>. Lines starting with <code>!!</code> name the app and the error. Fix the cause, then run <code>docker compose up -d</code> again; finished steps are skipped.</p></details>
+    <details><summary>qBittorrent login failed during setup.</summary>
+      <p>There is probably an older qBittorrent config in <code>config/qbittorrent</code> with a different password. Put that password in <code>STACK_PASSWORD</code>, or delete the folder and start again.</p></details>
+    <details><summary>Can I change the password later?</summary>
+      <p>Sonarr, Radarr, Lidarr, Prowlarr, and Bazarr pick up a new <code>STACK_PASSWORD</code> on the next <code>docker compose up -d</code>. qBittorrent, Emby, and the Homarr account keep their old password, so change it in those apps first and then update <code>.env</code>.</p></details>
+    <details><summary>Can I use it from my phone or another computer?</summary>
+      <p>Yes, on the same local network. Use your computer's LAN address instead of <code>localhost</code>, for example <code>http://192.168.1.20:8096</code>. Homarr tiles link to <code>localhost</code>, so edit them if you use the dashboard from another device.</p></details>
+    <details><summary>Should I open these ports to the internet?</summary>
+      <p>Not directly. If you want access from outside, put a reverse proxy with HTTPS in front, or use a VPN into your home network.</p></details>
+    <details><summary>Where do my files go?</summary>
+      <p>Downloads land in <code>downloads/</code> and finished, renamed files in <code>media/</code>. You can point both somewhere else, such as a large external disk, with the paths in <code>.env</code>.</p></details>
+    <details><summary>Is Emby free?</summary>
+      <p>The server and basic playback are free. Some features, such as hardware transcoding and some of the TV apps, need an Emby Premiere subscription.</p></details>
+  </div>
+  <div lang="tr">
+    <details><summary>Kurulum hata verdi, ne yapmalıyım?</summary>
+      <p><code>docker logs arr-setup</code> komutunu çalıştır. <code>!!</code> ile başlayan satırlarda hangi uygulamada ne hatası olduğu yazıyor. Sorunu giderdikten sonra <code>docker compose up -d</code> komutunu tekrar çalıştır; başarıyla tamamlanmış adımlar tekrarlanmıyor.</p></details>
+    <details><summary>Kurulum sırasında qBittorrent'e giriş yapılamadı.</summary>
+      <p>Büyük ihtimalle <code>config/qbittorrent</code> klasöründe, başka bir şifreyle yapılmış eski bir kurulumun ayarları duruyor. Ya o şifreyi <code>STACK_PASSWORD</code> olarak yaz ya da klasörü silip kurulumu baştan başlat.</p></details>
+    <details><summary>Şifremi sonradan değiştirebilir miyim?</summary>
+      <p>Sonarr, Radarr, Lidarr, Prowlarr ve Bazarr, <code>STACK_PASSWORD</code> değerini değiştirdikten sonraki ilk <code>docker compose up -d</code> komutunda yeni şifreye geçiyor. qBittorrent, Emby ve Homarr ise eski şifreyle kalıyor. Bunlarda şifreyi önce uygulamanın kendi ayarlarından değiştir, sonra <code>.env</code> dosyasını güncelle.</p></details>
+    <details><summary>Telefondan ya da başka bir bilgisayardan erişebilir miyim?</summary>
+      <p>Evet, aynı ev ağında olduğun sürece. <code>localhost</code> yerine bilgisayarının ev ağındaki IP adresini kullan, örneğin <code>http://192.168.1.20:8096</code>. Homarr'daki kartlar <code>localhost</code> adresine yönlendiriyor; paneli başka bir cihazdan kullanacaksan kartlardaki adresleri güncellemen gerekiyor.</p></details>
+    <details><summary>Bu portları internete açmalı mıyım?</summary>
+      <p>Doğrudan açmamalısın. Dışarıdan erişmek istiyorsan önüne HTTPS destekli bir ters proxy koy ya da ev ağına VPN üzerinden bağlan.</p></details>
+    <details><summary>Dosyalarım nerede duruyor?</summary>
+      <p>İndirilen dosyalar <code>downloads/</code> klasörüne, işlenip yeniden adlandırılanlar <code>media/</code> klasörüne gidiyor. İstersen <code>.env</code> dosyasındaki yolları değiştirerek ikisini de örneğin büyük bir harici diske taşıyabilirsin.</p></details>
+    <details><summary>Emby ücretsiz mi?</summary>
+      <p>Sunucunun kendisi ve temel oynatma özellikleri ücretsiz. Donanım hızlandırmalı dönüştürme (transcoding) ve bazı TV uygulamaları gibi özellikler için Emby Premiere aboneliği gerekiyor.</p></details>
+  </div>
+</section>
+
+<footer>
+  <span lang="en">Only download content you have the right to download. Container images by <a href="https://www.linuxserver.io/">LinuxServer.io</a> and the upstream projects. Source on <a href="https://github.com/MihrimatriX/arr-stack">GitHub</a>.</span>
+  <span lang="tr">Yalnızca indirme hakkına sahip olduğun içerikleri indir. Container imajları <a href="https://www.linuxserver.io/">LinuxServer.io</a> ve ilgili projelerden geliyor. Kaynak kodlar <a href="https://github.com/MihrimatriX/arr-stack">GitHub</a>'da.</span>
+</footer>
+
+</div>
+<script>
+  const services = [
+    ["Homarr", "homarr", 7575,
+     "The start page. One tile per app with an up/down status and a calendar of upcoming episodes and movies.",
+     "Ana panel. Her uygulamanın çalışıp çalışmadığını gösteren kartlar ve yaklaşan bölüm ve filmlerin takvimi burada."],
+    ["Seerr", "jellyseerr", 5055,
+     "A request page that looks like a streaming app. Family members sign in with their Emby account and ask for movies or shows.",
+     "Dizi-film platformlarına benzeyen bir istek sayfası. Evdekiler Emby hesaplarıyla girip istedikleri filmi ya da diziyi talep ediyor."],
+    ["Sonarr", "sonarr", 8989,
+     "Tracks TV shows. It knows which episodes exist, which you have, and grabs new ones as they air.",
+     "Dizileri takip ediyor. Hangi bölümlerin yayınlandığını, hangilerinin sende olduğunu biliyor ve yeni bölümleri çıktıkça indiriyor."],
+    ["Radarr", "radarr", 7878,
+     "Tracks movies. It waits until a release in the quality you want is available, and can upgrade a file later.",
+     "Filmleri takip ediyor. İstediğin kalitede bir sürüm çıkana kadar bekliyor, daha iyisi çıkarsa dosyayı onunla değiştirebiliyor."],
+    ["Lidarr", "lidarr", 8686,
+     "Tracks music artists and albums, the same way Sonarr does for shows.",
+     "Sonarr'ın diziler için yaptığını müzik için yapıyor: sanatçıları ve albümleri takip ediyor."],
+    ["Prowlarr", "prowlarr", 9696,
+     "Keeps your list of indexers in one place and shares it with Sonarr, Radarr, and Lidarr.",
+     "Indexer'ları tek bir yerden yönetiyor ve listeyi Sonarr, Radarr ve Lidarr ile paylaşıyor."],
+    ["FlareSolverr", "flaresolverr", null,
+     "Runs a headless browser so Prowlarr can reach indexers protected by Cloudflare. It has no UI.",
+     "Prowlarr'ın Cloudflare korumalı sitelere erişebilmesi için arka planda bir tarayıcı çalıştırıyor. Arayüzü yok."],
+    ["Bazarr", "bazarr", 6767,
+     "Finds and downloads subtitles for everything in Sonarr and Radarr, in the languages you set.",
+     "Sonarr ve Radarr'daki tüm içerikler için seçtiğin dillerde altyazı bulup indiriyor."],
+    ["qBittorrent", "qbittorrent", 8080,
+     "The download client. The *arr apps send it torrents and pick up the files when they finish.",
+     "İndirme programı. *arr uygulamaları torrent'leri buraya gönderiyor, indirme bitince dosyaları alıyor."],
+    ["Emby", "emby", 8096,
+     "The media server. It shows your library with posters and plays it in the browser and in apps for TV, phone, and tablet.",
+     "Medya sunucusu. Kütüphaneni afişleriyle listeliyor; tarayıcıdan ya da TV, telefon ve tablet uygulamalarından izlemeni sağlıyor."],
+    ["Watchtower", "watchtower", null,
+     "Updates this stack's containers every night at 04:30 and leaves other containers on your machine alone.",
+     "Bu stack'teki container'ları her gece 04:30'da güncelliyor, bilgisayarındaki diğer container'lara dokunmuyor."],
+  ];
+  document.getElementById("service-grid").innerHTML = services.map(([name, icon, port, en, tr]) => `
+    <div class="card">
+      <img src="https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/${icon}.png" alt="" loading="lazy">
+      <div><h3>${name} <span class="port">${port ? ":" + port : "<span lang='en'>no UI</span><span lang='tr'>arayüz yok</span>"}</span></h3>
+      <p lang="en">${en}</p><p lang="tr">${tr}</p></div>
+    </div>`).join("");
+
+  const root = document.documentElement, btn = document.getElementById("lang");
+  const setLang = l => { root.dataset.lang = l; root.lang = l; btn.textContent = l === "en" ? "TR" : "EN"; };
+  let saved = null;
+  try { saved = localStorage.getItem("lang"); } catch {}
+  setLang(saved || (navigator.language.startsWith("tr") ? "tr" : "en"));
+  btn.onclick = () => {
+    const l = root.dataset.lang === "en" ? "tr" : "en";
+    setLang(l);
+    try { localStorage.setItem("lang", l); } catch {}
+  };
+</script>
+</body>
+</html>
